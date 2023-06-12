@@ -9,9 +9,9 @@ COPY . .
 RUN dotnet build -c Release /p:Version=$BUILD_NUMBER /p:AssemblyVersion=$BUILD_NUMBER /p:FileVersion=$BUILD_NUMBER
 
 
-FROM base AS test
+FROM base AS unit-tests
 WORKDIR /build
-ENTRYPOINT dotnet test --collect:"XPlat Code Coverage" --no-build --configuration Release --results-directory /artifacts/tests/GithubActions.Api.UnitTests tests/GithubActions.Api.UnitTests/GithubActions.Api.UnitTests.csproj --settings tests/default.runsettings
+ENTRYPOINT dotnet test --collect:"XPlat Code Coverage" --no-build --configuration Release --results-directory /artifacts/test/results/GithubActions.Api.UnitTests tests/GithubActions.Api.UnitTests/GithubActions.Api.UnitTests.csproj --settings tests/default.runsettings
 
 
 FROM base AS publish-api
