@@ -1,33 +1,35 @@
 ﻿name: Release
-run-name: run-name-CHANGE-ME
+run-name: 1.${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }}
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
-
-defaults:
-  run:
-    shell: powershell
-
-concurrency:
-  cancel-in-progress: false
-  group: ${{ github.ref }}
-
-# permissions:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    concurrency:
+      cancel-in-progress: true
+      group: build
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Generate version
-        uses: codacy/git-version@2.4.0
+      - name: Output event
+        run: echo '${{ toJSON(github) }}'
       - name: Build base image
         run: docker build -f Dockerfile --target base -t base:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
       - name: Build test image
         run: docker build -f Dockerfile --target test -t test:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
       - name: Build api image
         run: docker build -f Dockerfile --target api -t api:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
+
+
+# Try and get powershell core working on agent
+# defaults:
+#   run:
+#     shell: powershell
+# permissions:
+# concurrency: 
+#   cancel-in-progress: false
+#   group: ${{ github.ref }}
