@@ -20,7 +20,11 @@ jobs:
       - name: Build base image
         run: docker build -f Dockerfile --target base -t base:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
       - name: Build test image
-        run: docker build -f Dockerfile --target test -t test:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
+        run: docker build -f Dockerfile --target unit-tests -t unit-tests:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
+      - name: Run unit tests
+        run: docker run --rm -v /results:/artifacts/test/results unit-tests:1.0.0.0
+      - name: Output event
+        run: ls -al
       - name: Build api image
         run: docker build -f Dockerfile --target api -t api:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
 
