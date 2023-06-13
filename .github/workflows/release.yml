@@ -36,7 +36,7 @@ jobs:
           files: |
             /artifacts/test/results/*.trx
       - name: Output folder contents
-        run: ls -al /artifacts/test/results/GithubActions.Api.UnitTests
+        run: ls -al /artifacts/test/results
       - name: Build api image
         run: docker build -f Dockerfile --target api -t api:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
 
