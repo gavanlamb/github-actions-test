@@ -34,7 +34,7 @@ jobs:
         # if: always() and `Run unit tests`
         with:
           files: |
-            /artifacts/test/results/**/*.trx
+            /artifacts/test/results/*.trx
       - name: Output folder contents
         run: ls -al /artifacts/test/results/GithubActions.Api.UnitTests
       - name: Build api image

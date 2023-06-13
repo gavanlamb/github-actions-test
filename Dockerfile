@@ -11,7 +11,7 @@ RUN dotnet build -c Release /p:Version=$BUILD_NUMBER /p:AssemblyVersion=$BUILD_N
 
 FROM base AS unit-tests
 WORKDIR /build
-ENTRYPOINT dotnet test --collect:"XPlat Code Coverage" --no-build --configuration Release --results-directory /artifacts/test/results/GithubActions.Api.UnitTests tests/GithubActions.Api.UnitTests/GithubActions.Api.UnitTests.csproj --settings tests/default.runsettings
+ENTRYPOINT dotnet test --collect:"XPlat Code Coverage" --no-build --configuration Release --results-directory /artifacts/test/results/ tests/GithubActions.Api.UnitTests/GithubActions.Api.UnitTests.csproj --settings tests/default.runsettings
 #&& \
 
 
