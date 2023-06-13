@@ -28,15 +28,15 @@ jobs:
       - name: Build test image
         run: docker build -f Dockerfile --target unit-tests -t unit-tests:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
       - name: Run unit tests
-        run: docker run --rm -v /artifacts/test/results:/artifacts/test/results unit-tests:1.0.0.0
+        run: docker run --rm -v ${{ github.workspace }}/artifacts/test/results:/artifacts/test/results unit-tests:1.0.0.0
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         # if: always() and `Run unit tests`
         with:
           files: |
-            /artifacts/test/results/*.trx
+            ${{ github.workspace }}/artifacts/test/results/*.trx
       - name: Output folder contents
-        run: ls -al /artifacts/test/results
+        run: ls -al ${{ github.workspace }}/artifacts/test/results
       - name: Build api image
         run: docker build -f Dockerfile --target api -t api:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
 
