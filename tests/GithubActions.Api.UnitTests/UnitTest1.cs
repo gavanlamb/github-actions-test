@@ -4,7 +4,7 @@ namespace GithubActions.Api.UnitTests;
 
 public class UnitTest1
 {
-    [Fact]
+    [Theory]
     [InlineData()]
     [InlineData()]
     [InlineData()]
@@ -18,7 +18,7 @@ public class UnitTest1
         Assert.True(true);
     }
     
-    [Fact]
+    [Theory]
     [InlineData()]
     [InlineData()]
     [InlineData()]
@@ -32,7 +32,7 @@ public class UnitTest1
         Assert.True(true);
     }
     
-    [Fact]
+    [Theory]
     [InlineData()]
     [InlineData()]
     [InlineData()]
