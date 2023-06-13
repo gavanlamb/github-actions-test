@@ -6,6 +6,12 @@ on:
     branches: [ "main" ]
   pull_request:
 
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +29,12 @@ jobs:
         run: docker build -f Dockerfile --target unit-tests -t unit-tests:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
       - name: Run unit tests
         run: docker run --rm -v /artifacts/test/results:/artifacts/test/results unit-tests:1.0.0.0
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # if: always() and `Run unit tests`
+        with:
+          files: |
+            /artifacts/test/results/**/*.trx
       - name: Output folder contents
         run: ls -al /artifacts/test/results/GithubActions.Api.UnitTests
       - name: Build api image
