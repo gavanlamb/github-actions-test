@@ -7,8 +7,6 @@ on:
   pull_request:
 
 permissions:
-  contents: read
-  issues: read
   checks: write
   pull-requests: write
 
@@ -22,37 +20,67 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Output event
-        run: echo '${{ toJSON(github) }}'
-      - name: Build base image
+      - name: Build
         run: docker build -f Dockerfile --target base -t base:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
       - name: Build test image
         run: docker build -f Dockerfile --target unit-tests -t unit-tests:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
       - name: Run unit tests
         run: docker run --rm -v ${{ github.workspace }}/artifacts/test/results:/artifacts/test/results unit-tests:1.0.0.0
+      
+      # TEST REPORT
+      ## Publish
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         # if: always() and `Run unit tests`
         with:
           files: |
-            ${{ github.workspace }}/artifacts/test/results/*.trx
-      - name: Publish Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
+            ./artifacts/test/results/*.trx
+      
+      # COVERAGE REPORT
+      ## Generate
+      - name: Generate coverage report
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.1.22
         with:
-          filename: ${{ github.workspace }}/artifacts/test/results/**/coverage.cobertura.xml
-          badge: true
-          fail_below_min: true
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: both
-          # thresholds: '60 80'
-      - name: Output folder contents
-        run: ls -al ${{ github.workspace }}/artifacts/test/results
+          reports: ./artifacts/test/results/*/coverage.cobertura.xml
+          targetdir: ./coverage/reports
+          reporttypes: MarkdownSummaryGithub;HtmlInline;Cobertura;Badges;Xml;XmlSummary;PngChart;HtmlChart
+          sourcedirs: ./src
+          historydir: ./tests/coverage/history
+          assemblyfilters: +*
+          classfilters: +*
+          filefilters: +*
+          verbosity: Info
+          title: title
+          tag: 1.${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }}
+          license: ${{ secrets.REPORT_GENERATOR_LICENSE }}
+          toolpath: ./coverage/tool
+          customSettings: settings:maximumNumberOfHistoricCoverageFiles=100;settings:createSubdirectoryForAllReportTypes=true
+      ## Add comment to build
+      - name: Output coverage summary
+        run: cat ./coverage/reports/MarkdownSummaryGithub/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+      ## Add comment to PR
+      - name: Create comment
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-id: coverage
+          body-path: ./coverage/reports/MarkdownSummaryGithub/SummaryGithub.md
+          edit-mode: replace
+          reactions: '+1'
+      ## Publish reports as artifacts
+      - name: Upload coverage report artifact
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: Coverage report        
+          path: ./coverage/reports
+      - name: Upload coverage history reports artifact
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: History report
+          path: ./tests/coverage/history
+
       - name: Build api image
         run: docker build -f Dockerfile --target api -t api:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
-
 
 # Try and get powershell core working on agent
 # defaults:

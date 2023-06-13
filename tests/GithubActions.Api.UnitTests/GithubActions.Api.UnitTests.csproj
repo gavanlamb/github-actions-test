@@ -20,4 +20,8 @@
         </PackageReference>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\GithubActions.Api\GithubActions.Api.csproj" />
+    </ItemGroup>
+
 </Project>
