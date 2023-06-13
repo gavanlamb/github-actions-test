@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
     concurrency:
       cancel-in-progress: true
@@ -35,6 +36,18 @@ jobs:
         with:
           files: |
             ${{ github.workspace }}/artifacts/test/results/*.trx
+      - name: Publish Coverage Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: ${{ github.workspace }}/artifacts/test/results/**/coverage.cobertura.xml
+          badge: true
+          fail_below_min: true
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          # thresholds: '60 80'
       - name: Output folder contents
         run: ls -al ${{ github.workspace }}/artifacts/test/results
       - name: Build api image
