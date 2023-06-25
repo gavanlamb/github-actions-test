@@ -51,11 +51,23 @@ jobs:
           docker run --rm -v ${{ github.workspace }}/artifacts/test/results:/artifacts/test/results unit-tests:1.0.0.0
           echo "state=finished" >> $env:GITHUB_OUTPUT
       - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2
+        if: |
+          always() && 
+          runner.os != 'Linux' &&
+          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished' )
+        with:
+          large_files: true
+          files: |
+            ./artifacts/test/results/*.trx
+      - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: |
           always() && 
-          (${{ steps.run_unit_tests.outputs.state == 'started' }} || ${{ steps.run_unit_tests.outputs.state == 'finished' }})
+          runner.os == 'Linux' &&
+          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished' )
         with:
+          large_files: true
           files: |
             ./artifacts/test/results/*.trx
 
