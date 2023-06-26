@@ -1,29 +1,199 @@
 ﻿name: Release
-run-name: 1.${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }}
+run-name: 1.${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }} - ${{ github.event.pull_request.title }}
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
 
+permissions:
+  checks: write
+  pull-requests: write
+
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
     concurrency:
       cancel-in-progress: true
       group: build
     steps:
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
+# TODO - limit some tasks to pull requests only and others to main
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
       - name: Output event
         run: echo '${{ toJSON(github) }}'
-      - name: Build base image
+      
+      # Build
+      - name: Build
+        shell: pwsh
         run: docker build -f Dockerfile --target base -t base:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
       - name: Build test image
-        run: docker build -f Dockerfile --target test -t test:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
+        shell: pwsh
+        run: docker build -f Dockerfile --target unit-tests -t unit-tests:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
+
+      - name: Run unit tests
+        id: run_unit_tests
+        shell: pwsh
+        run: |
+          echo "state=started" >> $env:GITHUB_OUTPUT
+          docker run --rm -v ${{ github.workspace }}/artifacts/test/results:/artifacts/test/results unit-tests:1.0.0.0
+          echo "state=finished" >> $env:GITHUB_OUTPUT
+      - uses: dorny/test-reporter@v1
+        if: |
+          always() && 
+          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished')
+        with:
+          name: Unit Tests
+          path: ./artifacts/test/results/*.trx
+          reporter: dotnet-trx
+#      - name: Publish test results
+#        id: publish_unit_test_results
+#        uses: EnricoMi/publish-unit-test-result-action/composite@v2
+#        if: |
+#          always() && 
+#          runner.os != 'Linux' &&
+#          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished')
+#        with:
+#          check_name: Unit Test Results
+#          comment_title: Unit Test Results
+#          check_run_annotations: all tests
+#          large_files: true
+#          pull_request_build: ${{ github.event_name == 'pull_request' && 'merge' || 'commit' }}
+#          test_changes_limit: 0
+#          report_suite_logs: info
+#          action_fail: true
+#          ignore_runs: true
+#          files: |
+#            ./artifacts/test/results/*.trx
+#      - name: Publish test results
+#        id: publish_unit_test_results
+#        uses: EnricoMi/publish-unit-test-result-action@v2
+#        if: |
+#          always() && 
+#          runner.os == 'Linux' &&
+#          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished')
+#        with:
+#          check_name: Unit Test Results
+#          comment_title: Unit Test Results
+#          check_run_annotations: all tests
+#          large_files: true
+#          pull_request_build: ${{ github.event_name == 'pull_request' && 'merge' || 'commit' }}
+#          test_changes_limit: 0
+#          report_suite_logs: info
+#          action_fail: true
+#          ignore_runs: true
+#          files: |
+#            ./artifacts/test/results/*.trx
+#      - name: Set badge color
+#        id: create_unit_tests_badge
+#        shell: pwsh
+#        run: |
+#          Switch (${{ fromJSON( steps.test-results.outputs.json ).conclusion }})
+#          {
+#            "success" {
+#              echo "badge_colour=31c653" >> $env:GITHUB_OUTPUT
+#              break 
+#            }
+#            "failure" {
+#              echo "badge_colour=ff0000" >> $env:GITHUB_OUTPUT
+#              break 
+#            }
+#            "neutral"
+#            default {
+#              echo "badge_colour=808080" >> $env:GITHUB_OUTPUT
+#              break 
+#            }
+#          }
+#      - name: Create badge for unit tests
+#        uses: emibcn/badge-action@v2.0.2
+#        with:
+#          label: Unit Tests
+#          status: '${{ fromJSON( steps.publish_unit_test_results.outputs.json ).formatted.stats.tests }} tests, ${{ fromJSON( steps.publish_unit_test_results.outputs.json ).formatted.stats.runs }} runs: ${{ fromJSON( steps.publish_unit_test_results.outputs.json ).conclusion }}'
+#          color: ${{ steps.create_unit_tests_badge.outputs.badge_colour }}
+#          path: unit-test-badge.svg
+
+      - name: Generate coverage report
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.1.22
+        with:
+          reports: ./artifacts/test/results/*/coverage.cobertura.xml
+          targetdir: ./coverage/reports
+          reporttypes: Cobertura;MarkdownDeltaSummary
+          sourcedirs: ./src
+          historydir: ./tests/coverage/history
+          assemblyfilters: +*
+          classfilters: +*
+          filefilters: +*
+          verbosity: Info
+          title: ${{ github.event.pull_request.title }}
+          tag: 1.${{ github.event.number }}.${{ github.run_number }}.${{ github.run_attempt }}
+          license: ${{ secrets.REPORT_GENERATOR_LICENSE }}
+          toolpath: ./coverage/tool
+          customSettings: settings:maximumNumberOfHistoricCoverageFiles=100;settings:createSubdirectoryForAllReportTypes=true
+      - name: Output coverage summary
+        run: cat ./coverage/reports/MarkdownDeltaSummary/DeltaSummary.md >> $GITHUB_STEP_SUMMARY
+      - name: Get coverage comment id
+        id: get_coverage_comment_details
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: pwsh
+        run: |
+          $Comments = $null
+          try {
+            $Url = "${{ github.event.pull_request._links.comments.href }}?per_page=100&sort=created&direction=asc"
+            $Headers = @{
+              'Accept' = 'application/vnd.github+json'
+              'Authorization' = 'Bearer ${{ github.token }}'
+              'X-GitHub-Api-Version' = '2022-11-28'
+            }
+            $Comments = Invoke-RestMethod -Uri $Url -Headers $Headers -Method GET
+          } catch {
+            Write-Error "Getting review comments failed with status code:$($_.Exception.Response.StatusCode.value__) with description:$($_.Exception.Response.StatusDescription)"
+          }
+          if (($Comments -ne $null) -and ($Comments.Length -gt 0)){
+            foreach ($Comment in $Comments){
+              if (($Comment.body -ne $null) -and ($Comment.body -like "# Delta Summary*")){
+                echo "id=$($Comment.id)" >> $env:GITHUB_OUTPUT
+                Exit
+              }
+            } 
+          }
+          echo "id=0" >> $env:GITHUB_OUTPUT
+      - name: Create comment
+        uses: peter-evans/create-or-update-comment@v3
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-id: ${{ steps.get_coverage_comment_details.outputs.id }}
+          body-path: ./coverage/reports/MarkdownDeltaSummary/DeltaSummary.md
+          edit-mode: replace
+          append-separator: none
+          reactions: '+1'
+      - name: Upload coverage report artifact
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: Coverage report        
+          path: ./coverage/reports
+      - name: Upload coverage history reports artifact
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: History report
+          path: ./tests/coverage/history
+      
+      # BUILD API IMAGE
       - name: Build api image
         run: docker build -f Dockerfile --target api -t api:1.0.0.0 --build-arg BUILD_NUMBER=1.0.0.0 .
-
 
 # Try and get powershell core working on agent
 # defaults:
