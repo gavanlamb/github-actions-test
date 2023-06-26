@@ -52,6 +52,9 @@ jobs:
           docker run --rm -v ${{ github.workspace }}/artifacts/test/results:/artifacts/test/results unit-tests:1.0.0.0
           echo "state=finished" >> $env:GITHUB_OUTPUT
       - uses: dorny/test-reporter@v1
+        if: |
+          always() && 
+          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished')
         with:
           name: Unit Tests
           path: ./artifacts/test/results/*.trx
