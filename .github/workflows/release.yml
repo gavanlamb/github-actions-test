@@ -51,42 +51,76 @@ jobs:
           echo "state=started" >> $env:GITHUB_OUTPUT
           docker run --rm -v ${{ github.workspace }}/artifacts/test/results:/artifacts/test/results unit-tests:1.0.0.0
           echo "state=finished" >> $env:GITHUB_OUTPUT
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2
-        if: |
-          always() && 
-          runner.os != 'Linux' &&
-          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished')
+      - uses: dorny/test-reporter@v1
         with:
-          check_name: Unit Test Results
-          comment_title: Unit Test Results
-          check_run_annotations: all tests
-          large_files: true
-          pull_request_build: ${{ github.event_name == 'pull_request' && 'merge' || 'commit' }}
-          test_changes_limit: 0
-          report_suite_logs: info
-          action_fail: true
-          ignore_runs: true
-          files: |
-            ./artifacts/test/results/*.trx
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: |
-          always() && 
-          runner.os == 'Linux' &&
-          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished')
-        with:
-          check_name: Unit Test Results
-          comment_title: Unit Test Results
-          check_run_annotations: all tests
-          large_files: true
-          pull_request_build: ${{ github.event_name == 'pull_request' && 'merge' || 'commit' }}
-          test_changes_limit: 0
-          report_suite_logs: info
-          action_fail: true
-          ignore_runs: true
-          files: |
-            ./artifacts/test/results/*.trx
+          name: Unit Tests
+          path: ./artifacts/test/results/*.trx
+          reporter: dotnet-trx
+#      - name: Publish test results
+#        id: publish_unit_test_results
+#        uses: EnricoMi/publish-unit-test-result-action/composite@v2
+#        if: |
+#          always() && 
+#          runner.os != 'Linux' &&
+#          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished')
+#        with:
+#          check_name: Unit Test Results
+#          comment_title: Unit Test Results
+#          check_run_annotations: all tests
+#          large_files: true
+#          pull_request_build: ${{ github.event_name == 'pull_request' && 'merge' || 'commit' }}
+#          test_changes_limit: 0
+#          report_suite_logs: info
+#          action_fail: true
+#          ignore_runs: true
+#          files: |
+#            ./artifacts/test/results/*.trx
+#      - name: Publish test results
+#        id: publish_unit_test_results
+#        uses: EnricoMi/publish-unit-test-result-action@v2
+#        if: |
+#          always() && 
+#          runner.os == 'Linux' &&
+#          (steps.run_unit_tests.outputs.state == 'started' || steps.run_unit_tests.outputs.state == 'finished')
+#        with:
+#          check_name: Unit Test Results
+#          comment_title: Unit Test Results
+#          check_run_annotations: all tests
+#          large_files: true
+#          pull_request_build: ${{ github.event_name == 'pull_request' && 'merge' || 'commit' }}
+#          test_changes_limit: 0
+#          report_suite_logs: info
+#          action_fail: true
+#          ignore_runs: true
+#          files: |
+#            ./artifacts/test/results/*.trx
+#      - name: Set badge color
+#        id: create_unit_tests_badge
+#        shell: pwsh
+#        run: |
+#          Switch (${{ fromJSON( steps.test-results.outputs.json ).conclusion }})
+#          {
+#            "success" {
+#              echo "badge_colour=31c653" >> $env:GITHUB_OUTPUT
+#              break 
+#            }
+#            "failure" {
+#              echo "badge_colour=ff0000" >> $env:GITHUB_OUTPUT
+#              break 
+#            }
+#            "neutral"
+#            default {
+#              echo "badge_colour=808080" >> $env:GITHUB_OUTPUT
+#              break 
+#            }
+#          }
+#      - name: Create badge for unit tests
+#        uses: emibcn/badge-action@v2.0.2
+#        with:
+#          label: Unit Tests
+#          status: '${{ fromJSON( steps.publish_unit_test_results.outputs.json ).formatted.stats.tests }} tests, ${{ fromJSON( steps.publish_unit_test_results.outputs.json ).formatted.stats.runs }} runs: ${{ fromJSON( steps.publish_unit_test_results.outputs.json ).conclusion }}'
+#          color: ${{ steps.create_unit_tests_badge.outputs.badge_colour }}
+#          path: unit-test-badge.svg
 
       - name: Generate coverage report
         uses: danielpalme/ReportGenerator-GitHub-Action@5.1.22
